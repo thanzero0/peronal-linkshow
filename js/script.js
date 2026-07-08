@@ -7,12 +7,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Toast ─────────────────────────────────────────────────────────────────
     const toast        = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
+    let toastTimeout   = null;
 
     function showToast(msg) {
         if (!toast || !toastMessage) return;
         toastMessage.textContent = msg;
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function copyToClipboard(text, successMessage) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => showToast(successMessage))
+                .catch(() => fallbackCopy(text, successMessage));
+        } else {
+            fallbackCopy(text, successMessage);
+        }
+    }
+
+    function fallbackCopy(text, successMessage) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showToast(successMessage);
+        } catch (err) {
+            showToast('Failed to copy');
+        }
+        document.body.removeChild(textArea);
     }
 
     // Copy on right-click / long-press
@@ -20,8 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (emailBtn) {
         emailBtn.addEventListener('contextmenu', e => {
             e.preventDefault();
-            navigator.clipboard.writeText('thanzero@gmail.com')
-                .then(() => showToast('Email copied!'));
+            copyToClipboard('thanzero@gmail.com', 'Email copied!');
         });
     }
 
@@ -29,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (phoneBtn) {
         phoneBtn.addEventListener('contextmenu', e => {
             e.preventDefault();
-            navigator.clipboard.writeText('085198197271')
-                .then(() => showToast('Phone copied!'));
+            copyToClipboard('085198197271', 'Phone copied!');
         });
     }
 
@@ -62,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let targetX = 50, targetY = 50;   // where we want the glow (% of viewport)
     let currentX = 50, currentY = 50; // smoothed position
+    let isAnimating = false;
 
     function getGlowGradient(x, y) {
         if (document.body.classList.contains('light-mode')) {
@@ -86,25 +115,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Smooth animation loop (lerp)
     function animationLoop() {
-        currentX += (targetX - currentX) * 0.07;
-        currentY += (targetY - currentY) * 0.07;
+        const dx = targetX - currentX;
+        const dy = targetY - currentY;
+        currentX += dx * 0.07;
+        currentY += dy * 0.07;
         renderGlow(currentX, currentY);
+
+        if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+            currentX = targetX;
+            currentY = targetY;
+            renderGlow(currentX, currentY);
+            isAnimating = false;
+            return;
+        }
+
         requestAnimationFrame(animationLoop);
     }
-    animationLoop();
+
+    function startAnimation() {
+        if (!isAnimating) {
+            isAnimating = true;
+            requestAnimationFrame(animationLoop);
+        }
+    }
+    
+    startAnimation();
 
     // Mouse tracking
     document.addEventListener('mousemove', e => {
         targetX = (e.clientX / window.innerWidth)  * 100;
         targetY = (e.clientY / window.innerHeight) * 100;
+        startAnimation();
         resetIdle();
     });
 
     // Touch tracking
     document.addEventListener('touchmove', e => {
-        const t = e.touches[0];
-        targetX = (t.clientX / window.innerWidth)  * 100;
-        targetY = (t.clientY / window.innerHeight) * 100;
+        if (e.touches && e.touches.length > 0) {
+            const t = e.touches[0];
+            targetX = (t.clientX / window.innerWidth)  * 100;
+            targetY = (t.clientY / window.innerHeight) * 100;
+            startAnimation();
+        }
         resetIdle();
     }, { passive: true });
 

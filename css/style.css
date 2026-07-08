@@ -190,6 +190,11 @@ body {
     transition: var(--transition), color 0.4s ease;
 }
 
+.link-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
 .link-item:hover .link-icon {
     color: var(--accent);
     transform: scale(1.08);
@@ -337,7 +342,7 @@ body.light-mode .icon-moon { display: flex; }
 #screensaver {
     position: fixed;
     inset: 0;
-    z-index: 9000;
+    z-index: 10000;
     pointer-events: none;
     opacity: 0;
     background: #000;
@@ -380,13 +385,19 @@ body.light-mode .icon-moon { display: flex; }
     background: radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, transparent 70%);
     top: -10%;
     left: -10%;
-    animation: rotateBlobRed 25s linear infinite;
 }
 
 #screensaver .ss-blob-blue {
     background: radial-gradient(circle, rgba(37, 99, 235, 0.8) 0%, transparent 70%);
     bottom: -10%;
     right: -10%;
+}
+
+#screensaver.active .ss-blob-red {
+    animation: rotateBlobRed 25s linear infinite;
+}
+
+#screensaver.active .ss-blob-blue {
     animation: rotateBlobBlue 25s linear infinite;
 }
 
